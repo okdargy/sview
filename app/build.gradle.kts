@@ -3,6 +3,13 @@ plugins {
     alias(libs.plugins.jetbrainsKotlinAndroid)
 }
 
+val keystorePath = System.getenv("SIGNING_KEYSTORE_PATH")
+val keystorePassword = System.getenv("SIGNING_KEYSTORE_PASSWORD")
+val keyAliasValue = System.getenv("SIGNING_KEY_ALIAS")
+val keyPasswordValue = System.getenv("SIGNING_KEY_PASSWORD")
+val hasCiSigning = listOf(keystorePath, keystorePassword, keyAliasValue, keyPasswordValue)
+    .all { !it.isNullOrBlank() }
+
 android {
     namespace = "party.dargy.sview"
     compileSdk = 34
@@ -20,6 +27,16 @@ android {
         }
     }
 
+    signingConfigs {
+        if (hasCiSigning) {
+            create("ciRelease") {
+                storeFile = file(keystorePath!!)
+                storePassword = keystorePassword
+                keyAlias = keyAliasValue
+                keyPassword = keyPasswordValue
+            }
+        }
+    }
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -27,6 +44,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            if (hasCiSigning) {
+                signingConfig = signingConfigs.getByName("ciRelease")
+            }
         }
     }
     compileOptions {
