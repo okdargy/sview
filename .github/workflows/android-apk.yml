@@ -13,6 +13,9 @@ on:
       - '**/*.md'
       - '**/*.MD'
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
