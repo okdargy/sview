@@ -8,6 +8,7 @@
 Built for jailbroken Amazon Echo Shows to display Spotify now-playing info
 
 </div>
+
 > [!IMPORTANT]
 > Requires Spotify to be installed and logged in on the device
 
