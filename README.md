@@ -27,4 +27,5 @@ The GitHub Action in `.github/workflows/android-apk.yml` also produces a signed 
 
 ## Requirements
 - Android 11+ (minSdk 30) on a jailbroken Amazon Echo Show
+> Find out how to jailbreak your Echo Show on [XDA Forums](https://xdaforums.com/f/amazon-echo.6148/)
 - Spotify app installed and logged in
