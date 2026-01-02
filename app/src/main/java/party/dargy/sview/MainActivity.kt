@@ -1,5 +1,6 @@
 package party.dargy.sview
 
+import android.content.IntentFilter
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.os.SystemClock
@@ -49,6 +50,7 @@ class MainActivity : ComponentActivity() {
     private var positionAnchorTime: Long = 0L
     private var positionTicker: Job? = null
     private var lyricsFetchJob: Job? = null
+    private val spotifyBroadcastReceiver = MyBroadcastReceiver()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -77,7 +79,19 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
+        registerSpotifyReceiver()
         connectToSpotify()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        isConnecting = false
+        connectAttempts = 0
+        spotifyAppRemote?.let {
+            SpotifyAppRemote.disconnect(it)
+        }
+        positionTicker?.cancel()
+        unregisterReceiverSafe()
     }
 
     private fun connectToSpotify(delayMs: Long = 0) {
@@ -126,6 +140,21 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun registerSpotifyReceiver() {
+        runCatching {
+            val filter = IntentFilter().apply {
+                addAction(MyBroadcastReceiver.BroadcastTypes.METADATA_CHANGED)
+                addAction(MyBroadcastReceiver.BroadcastTypes.PLAYBACK_STATE_CHANGED)
+                addAction(MyBroadcastReceiver.BroadcastTypes.QUEUE_CHANGED)
+            }
+            registerReceiver(spotifyBroadcastReceiver, filter, RECEIVER_EXPORTED)
+        }.onFailure { Log.w("MainActivity", "Failed to register Spotify receiver", it) }
+    }
+
+    private fun unregisterReceiverSafe() {
+        runCatching { unregisterReceiver(spotifyBroadcastReceiver) }
+    }
+
     private fun connected() {
         spotifyAppRemote?.let {
             it.playerApi.playerState.setResultCallback { state ->
@@ -141,6 +170,7 @@ class MainActivity : ComponentActivity() {
 
     private fun handlePlayerState(state: com.spotify.protocol.types.PlayerState) {
         Log.i("StateChange", state.toString());
+        Log.i("ConnectionCheck", spotifyAppRemote?.isConnected.toString());
         val track = state.track ?: return
         positionAnchorMs = state.playbackPosition
         positionAnchorTime = SystemClock.elapsedRealtime()
@@ -261,13 +291,4 @@ class MainActivity : ComponentActivity() {
         if (hasFocus) hideSystemBars()
     }
 
-    override fun onStop() {
-        super.onStop()
-        isConnecting = false
-        connectAttempts = 0
-        spotifyAppRemote?.let {
-            SpotifyAppRemote.disconnect(it)
-        }
-        positionTicker?.cancel()
-    }
 }
